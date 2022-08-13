@@ -4,176 +4,138 @@ const $ = function (selector) {
 };
 
 function sleep(ms) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function displayCaption() {
+    document.querySelector('#attempts').innerText = '❤️ '.repeat(attempts);
+    const reds = '🍎 '.repeat(countOfBlocks - greensPerLevel[level] - (attemptsPerLevel[level] - attempts));
+    const greens = '🍏 '.repeat(greensPerLevel[level]);
+    document.querySelector('#level').innerText = reds + greens;
+}
+
+function resetBlocks() {
+    document.querySelectorAll('.block').forEach((item) => {
+        item.style.removeProperty('background-color');
+        item.style.cursor = 'pointer';
+        item.onclick = checkBlock;
     });
 }
 
-/*
- * Add a new block with id
- */
-async function add(id) {
-    // console.log('asked to add: ', id);
-    const e = document.createElement('div');
-    e.className = 'block';
-    e.id = id;
-    e.onclick = checkBlock;
-    $('.blocks').appendChild(e);
-    count++;
+function addBlock(id) {
+    const block = document.createElement('div');
+    block.classList.add('block');
+    block.id = id;
+    block.onclick = checkBlock;
+    document.querySelector('.blocks').append(block);
+    countOfBlocks++;
 }
 
-async function shuffle(level) {
-    let left = greens[level];
-    if (left > count)
-        return ;    // shouldn't happen
-    arr = [];
-    for (let i = 0; i < count; i++)
-        arr.push(0);
-    while (left) {
-        let cell = Math.floor(Math.random() * count);
-        if (!arr[cell]) {
-            arr[cell] = 1;
-            left--;
-        }
+function removeBlocks() {
+    document.querySelectorAll('.block').forEach((item) => item.remove());
+}
+
+function checkBlock(e) {
+    const id = e.target.id;
+    const block = document.getElementById(id);
+    if (!arr[id]) {
+        wrong(block);
+    } else {
+        right(block);
     }
 }
 
-function displayAttempts() {
-    let result = '';
-    switch (attempts) {
-        case 4:
-            result += '❤️ ';
-        case 3:
-            result += '❤️ ';
-        case 2:
-            result += '❤️ ';
-        case 1:
-            result += '❤️ ';
-    }
-    $('#attempts').innerText = result;
-}
-
-function displayBlocks() {
-    let result = '';
-    // console.log('count:', count, ', level:', level, ', greens[level]:', greens[level]);
-    for (let i = 0; i < count - greens[level] - (atmpts[level] - attempts); i++)
-        result += '🍎 ';
-    for (let i = 0; i < greens[level]; i++)
-        result += '🍏 ';
-    $('#level').innerText = result;
-}
-
-/*
- * Wrong try
- */
-function wrong(e) {
-    e.style.backgroundColor = "red";
-    e.onclick = null;
+function wrong(block) {
+    block.style.backgroundColor = 'red';
+    block.style.cursor = 'unset';
+    block.onclick = null;
     attempts--;
-    displayAttempts();
-    displayBlocks();
+    displayCaption();
     if (!attempts) {
         gameOver();
     }
 }
 
-/*
- * Good try - you got lucky!
- */
-async function right(e) {
-    e.style.backgroundColor = "green";
+async function right(block) {
+    block.style.backgroundColor = 'green';
     await sleep(50);
-    await resetBlocks(); // setTimeout(() => resetBlocks(), 50);
-    await add(count); // setTimeout(() => add(count), 60);
+    resetBlocks();
+    addBlock(countOfBlocks);
     level++;
-    attempts = atmpts[level];
-    await shuffle(level);
-    displayAttempts();
-    displayBlocks();
+    attempts = attemptsPerLevel[level];
+    displayCaption();
+    arr = generateMap(level);
 }
 
-/*
- * Reset all blocks: remove background color, restore clicks
- */
-function resetBlocks() {
-    for (let i = 0; i < count; i++) {
-        try {
-            const e = document.getElementById('' + i);
-            e.style.removeProperty('background-color');
-            e.onclick = checkBlock;
-        } catch (ignore) {}
-    }
-}
-
-/*
- * Show all blocks, disable clicks
- */
 function gameOver() {
-    let i = 0;
-    while (i < count) {
-        try {
-            const e = document.getElementById('' + i);
-            if (arr[i]) {
-                e.style.backgroundColor = "green";
-            } else {
-                e.style.backgroundColor = "red";
-            }
-            e.onclick = null;
-        } catch (ignore) {}
-        i++;
-    }
-    $('.restart').style.visibility = "visible";
+    document.querySelectorAll('.block').forEach((item) => {
+        item.style.backgroundColor = arr[item.id] ? 'green' : 'red';
+        item.style.cursor = 'unset';
+        item.onclick = null;
+    });
+    document.querySelector('.restartBtn').style.visibility = 'visible';
 }
 
-function checkBlock(e) {
-    const id = e.target.id;
-    const element = document.getElementById(id);
-    if (!arr[id]) {
-        wrong(element);
-    } else {
-        right(element);
-    }
-}
-
-/*
- * Remove all blocks if there any
- */
-async function clearBlocks() {
-    if (count) {
-        for (let i = 0; i < count; i++) {
-            try {
-                const e = document.getElementById('' + i);
-                $('.blocks').removeChild(e);
-            } catch (ignore) {
-            }
+function generateMap(level) {
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            // случайный индекс от 0 до i
+            const j = Math.floor(Math.random() * (i + 1)); 
+            // поменять элементы местами
+            [array[i], array[j]] = [array[j], array[i]];
         }
     }
+    
+    const array = [
+        ...Array(greensPerLevel[level]).fill(1),
+        ...Array(level - greensPerLevel[level] + 1).fill(0),
+    ];
+    console.log('array:', array);
+    shuffle(array);
+    console.log('shuffled array:', array);
+    return array;
 }
 
 async function init() {
-    $('.restart').style.visibility = "hidden";
-    await clearBlocks();
-    arr = [];
-    count = 0;
-    attempts = 2;
+    document.querySelector('.restartBtn').style.visibility = 'hidden';
+    removeBlocks();
+    countOfBlocks = 0;
     level = 1;
-    arr[0] = Math.floor(Math.random() * 2);
-    arr[1] = !arr[0];
-    await add(0);
-    await add(1);
-    displayBlocks();
-    displayAttempts();
+    attempts = 2;
+    arr = generateMap(level);
+    addBlock(countOfBlocks);
+    addBlock(countOfBlocks);
+    displayCaption();
 }
 
-// бэка нет - не шали ;)
+                     // 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
+const greensPerLevel = [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]; // - count of green blocks for level
+const attemptsPerLevel = [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
 
-             // 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
-const greens = [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]; // - count of green blocks for level
-const atmpts = [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
+// const game = {
+//     level: 1,
+//     greensPerLevel: [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
+//     attemptsPerLevel: [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4],
+
+//     init: function () {
+//         this.level = 1;
+//         $('.restartBtn').style.visibility = "hidden";
+//         await removeBlocks();
+//         count = 0;
+//         attempts = 2;
+//         level = 1;
+//         arr = generateMap(level);
+//         await addBlock(0);
+//         await addBlock(1);
+//         displayCaption();
+//     }
+// };
+
+// game.init();
 
 let arr;
-let count;
+let countOfBlocks;
 let attempts;
 let level;
 init();
-// console.log('arr:', arr, ', count:', count, ', level:', level, 'attempts:', attempts);
+// console.log('arr:', arr, ', countOfBlocks:', countOfBlocks, ', level:', level, 'attempts:', attempts);

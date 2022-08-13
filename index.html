@@ -6,21 +6,18 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="container">
-    <div class="title">
-        <div><h1>Green-red game</h1></div>
+    <div class="container">
+        <header class="title">
+            <h1>Green-red game</h1>
+        </header>
+        <div class="caption">
+            <div id="attempts"></div>
+            <div id="level"></div>
+        </div>
+        <div class="blocks">
+        </div>
+        <button class="restartBtn" onclick="init()">Try again</button>
     </div>
-    <div class="caption">
-        <div class="attempts"><p id="attempts"></p></div>
-        <div class="level"><p id="level"></p></div>
-    </div>
-    <div class="blocks">
-    </div>
-    <div class="restart" style="visibility: hidden">
-        <button onclick="init()">Wanna trrrrrry again!</button>
-    </div>
-</div>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
