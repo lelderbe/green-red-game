@@ -4,7 +4,7 @@ const $ = function (selector) {
 };
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function displayCaption() {
@@ -76,24 +76,40 @@ function gameOver() {
     document.querySelector('.restartBtn').style.visibility = 'visible';
 }
 
-function generateMap(level) {
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            // случайный индекс от 0 до i
-            const j = Math.floor(Math.random() * (i + 1)); 
-            // поменять элементы местами
-            [array[i], array[j]] = [array[j], array[i]];
-        }
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        // случайный индекс от 0 до i
+        const j = Math.floor(Math.random() * (i + 1));
+        // поменять элементы местами
+        [array[i], array[j]] = [array[j], array[i]];
     }
-    
-    const array = [
-        ...Array(greensPerLevel[level]).fill(1),
-        ...Array(level - greensPerLevel[level] + 1).fill(0),
-    ];
+}
+
+function generateMap(level) {
+    const array = [...Array(greensPerLevel[level]).fill(1), ...Array(level - greensPerLevel[level] + 1).fill(0)];
     console.log('array:', array);
     shuffle(array);
     console.log('shuffled array:', array);
     return array;
+}
+
+function checkMap() {
+    count = {};
+
+    for (let i = 0; i < 1000; i++) {
+        let array = generateMap(5);
+        shuffle(array);
+        let key = array.join('');
+        if (!count[key]) {
+            count[key] = 0;
+        }
+        count[key]++;
+    }
+
+    // показать количество всех возможных вариантов
+    for (let key in count) {
+        console.log(`${key}: ${count[key]}`);
+    }
 }
 
 async function init() {
@@ -108,7 +124,7 @@ async function init() {
     displayCaption();
 }
 
-                     // 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
+//..................... 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
 const greensPerLevel = [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]; // - count of green blocks for level
 const attemptsPerLevel = [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
 
@@ -138,4 +154,5 @@ let countOfBlocks;
 let attempts;
 let level;
 init();
+// checkMap();
 // console.log('arr:', arr, ', countOfBlocks:', countOfBlocks, ', level:', level, 'attempts:', attempts);
