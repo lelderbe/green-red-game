@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Green-Red</title>
     <link rel="stylesheet" href="assets/styles.css">
 </head>
+
 <body>
-    <div class="container">
-        <h1 class="title">Green-red game</h1>
+    <div class="wrapper">
+        <h1 class="title">Guessing game</h1>
         <div class="caption">
-            <div id="attempts"></div>
-            <div id="level"></div>
+            <div>Level: <span id="level"></span></div>
+            <div>Best level: <span id="best-level"></span></div>
         </div>
-        <div class="blocks">
+        <div class="stats">
+            <div class="stats__lives"></div>
+            <div class="stats__blocks"></div>
         </div>
-        <button class="restartBtn" onclick="init()">Try again</button>
+        <div class="blocks"></div>
+        <button class="restartBtn" onclick="initGame()">Restart</button>
     </div>
     <script src="assets/script.js"></script>
 </body>
+
 </html>

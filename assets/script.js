@@ -1,79 +1,88 @@
-// querySelector, jQuery style
-const $ = function (selector) {
-    return document.querySelector(selector);
-};
+const statsLivesElement = document.querySelector('.stats__lives');
+const statsBlocksElement = document.querySelector('.stats__blocks');
+const levelElement = document.querySelector('#level');
+const bestLevelElement = document.querySelector('#best-level');
+const blocksElement = document.querySelector('.blocks');
+const restartBtn = document.querySelector('.restartBtn');
+
+const GOOD_CLICK_DELAY = 200;
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function displayCaption() {
-    document.querySelector('#attempts').innerText = '❤️ '.repeat(attempts);
-    const reds = '🍎 '.repeat(countOfBlocks - greensPerLevel[level] - (attemptsPerLevel[level] - attempts));
-    const greens = '🍏 '.repeat(greensPerLevel[level]);
-    document.querySelector('#level').innerText = reds + greens;
+function updateStats() {
+    const blocksCount = level + 1;
+
+    const emptyLives = livesPerLevel[level] - lives;
+    const livesAvailable = '<span class="stats-live_available">❤️</span>'.repeat(lives);
+    const livesEmpty = '<span class="stats-live_empty">💔</span>'.repeat(emptyLives);
+    statsLivesElement.innerHTML = livesAvailable + livesEmpty;
+
+    const goodBlocksCount = goodBlocksPerLevel[level];
+    const badBlocksCount = blocksCount - goodBlocksCount - (livesPerLevel[level] - lives);
+    const emptyBlocksCount = blocksCount - badBlocksCount - goodBlocksCount;
+    const emptyBlocks = '<div class="stats-block stats-block_bad stats-block_empty"></div>'.repeat(emptyBlocksCount);
+    const badBlocks = '<div class="stats-block stats-block_bad"></div>'.repeat(badBlocksCount);
+    const goodBlocks = '<div class="stats-block stats-block_good"></div>'.repeat(goodBlocksCount);
+    statsBlocksElement.innerHTML = emptyBlocks + badBlocks + goodBlocks;
+
+    levelElement.textContent = `${level} / ${livesPerLevel.length - 1}`;
+    bestLevelElement.textContent = `${bestLevel}`; // TODO
 }
 
-function resetBlocks() {
-    document.querySelectorAll('.block').forEach((item) => {
-        item.style.removeProperty('background-color');
-        item.style.cursor = 'pointer';
-        item.onclick = checkBlock;
-    });
-}
+// function resetBlocks() {
+//     [...blocksElement.children].forEach((item) => {
+//         item.style.removeProperty('background-color');
+//         item.style.cursor = 'pointer';
+//         item.onclick = checkBlock;
+//     });
+// }
 
 function addBlock(id) {
     const block = document.createElement('div');
     block.classList.add('block');
     block.id = id;
     block.onclick = checkBlock;
-    document.querySelector('.blocks').append(block);
-    countOfBlocks++;
-}
-
-function removeBlocks() {
-    document.querySelectorAll('.block').forEach((item) => item.remove());
+    blocksElement.append(block);
 }
 
 function checkBlock(e) {
     const id = e.target.id;
-    const block = document.getElementById(id);
-    if (!arr[id]) {
-        wrong(block);
+    if (map[id] === 0) {
+        handleWrongClick(e.target);
     } else {
-        right(block);
+        handleGoodClick(e.target);
     }
 }
 
-function wrong(block) {
+function handleWrongClick(block) {
     block.style.backgroundColor = 'red';
     block.style.cursor = 'unset';
     block.onclick = null;
-    attempts--;
-    displayCaption();
-    if (!attempts) {
+    lives--;
+    updateStats();
+    if (!lives) {
         gameOver();
     }
 }
 
-async function right(block) {
+async function handleGoodClick(block) {
     block.style.backgroundColor = 'green';
-    await sleep(50);
-    resetBlocks();
-    addBlock(countOfBlocks);
+    await sleep(GOOD_CLICK_DELAY);
+    bestLevel = bestLevel > level ? bestLevel : level;
+    localStorage.setItem('best-level', bestLevel);
     level++;
-    attempts = attemptsPerLevel[level];
-    displayCaption();
-    arr = generateMap(level);
+    initLevel(level);
 }
 
 function gameOver() {
-    document.querySelectorAll('.block').forEach((item) => {
-        item.style.backgroundColor = arr[item.id] ? 'green' : 'red';
+    [...blocksElement.children].forEach((item) => {
+        item.style.backgroundColor = map[item.id] ? 'green' : 'red';
         item.style.cursor = 'unset';
         item.onclick = null;
     });
-    document.querySelector('.restartBtn').style.visibility = 'visible';
+    restartBtn.style.visibility = 'visible';
 }
 
 function shuffle(array) {
@@ -86,73 +95,72 @@ function shuffle(array) {
 }
 
 function generateMap(level) {
-    const array = [...Array(greensPerLevel[level]).fill(1), ...Array(level - greensPerLevel[level] + 1).fill(0)];
-    console.log('array:', array);
-    shuffle(array);
-    console.log('shuffled array:', array);
-    return array;
+    const blocksCount = level + 1;
+    const goodBlocksCount = goodBlocksPerLevel[level];
+    const badBlocksCount = blocksCount - goodBlocksCount;
+
+    const map = [...Array(goodBlocksCount).fill(1), ...Array(badBlocksCount).fill(0)];
+    // console.log('map:', map);
+    shuffle(map);
+    // console.log('shuffled map:', map);
+    return map;
 }
 
-function checkMap() {
-    count = {};
+function checkMapShuffling(level) {
+    frequencyMap = {};
+    generatesCount = 1000;
 
-    for (let i = 0; i < 1000; i++) {
-        let array = generateMap(5);
+    for (let i = 0; i < generatesCount; i++) {
+        let array = generateMap(level);
         shuffle(array);
         let key = array.join('');
-        if (!count[key]) {
-            count[key] = 0;
+        if (!frequencyMap[key]) {
+            frequencyMap[key] = 0;
         }
-        count[key]++;
+        frequencyMap[key]++;
     }
 
     // показать количество всех возможных вариантов
-    for (let key in count) {
-        console.log(`${key}: ${count[key]}`);
+    for (let key in frequencyMap) {
+        console.log(`${key}: ${frequencyMap[key]} (${(frequencyMap[key] * 100) / generatesCount}%)`);
     }
 }
 
-async function init() {
-    document.querySelector('.restartBtn').style.visibility = 'hidden';
-    removeBlocks();
-    countOfBlocks = 0;
+function initGame() {
+    // hide restart button
+    restartBtn.style.visibility = 'hidden';
     level = 1;
-    attempts = 2;
-    arr = generateMap(level);
-    addBlock(countOfBlocks);
-    addBlock(countOfBlocks);
-    displayCaption();
+    initLevel(level);
 }
 
-//..................... 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
-const greensPerLevel = [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]; // - count of green blocks for level
-const attemptsPerLevel = [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
+function initLevel(level) {
+    const needBlocksCount = level + 1;
 
-// const game = {
-//     level: 1,
-//     greensPerLevel: [1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-//     attemptsPerLevel: [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4],
+    // remove old blocks
+    blocksElement.innerHTML = '';
 
-//     init: function () {
-//         this.level = 1;
-//         $('.restartBtn').style.visibility = "hidden";
-//         await removeBlocks();
-//         count = 0;
-//         attempts = 2;
-//         level = 1;
-//         arr = generateMap(level);
-//         await addBlock(0);
-//         await addBlock(1);
-//         displayCaption();
-//     }
-// };
+    // generate map
+    map = generateMap(level);
 
-// game.init();
+    // set lives
+    lives = livesPerLevel[level];
 
-let arr;
-let countOfBlocks;
-let attempts;
+    // add blocks
+    for (let i = 0; i < needBlocksCount; i++) {
+        addBlock(i);
+    }
+
+    updateStats();
+}
+
+//......................... 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
+const goodBlocksPerLevel = [0, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]; // - count of green blocks for level
+const livesPerLevel = [0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
+
+let map;
 let level;
-init();
-// checkMap();
-// console.log('arr:', arr, ', countOfBlocks:', countOfBlocks, ', level:', level, 'attempts:', attempts);
+let lives;
+let bestLevel = Number(localStorage.getItem('best-level')) || 0;
+initGame();
+
+// checkMapShuffling(4);
