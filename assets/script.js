@@ -4,11 +4,36 @@ const levelElement = document.querySelector('#level');
 const bestLevelElement = document.querySelector('#best-level');
 const blocksElement = document.querySelector('.blocks');
 const restartBtn = document.querySelector('.restartBtn');
+const cellsElement = document.querySelector('.cells');
 
 const GOOD_CLICK_DELAY = 200;
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function _getRandomItem(items = []) {
+    return items[Math.trunc(Math.random() * items.length)];
+}
+
+function _getCellContent(cellNumber) {
+    let classNames = '';
+    let icon = cellNumber;
+    if (cellNumber < level) {
+        return ['solved', cellNumber];
+    }
+    if (!lives && cellNumber === level) {
+        return ['', '☠️'];
+    }
+    if (cellNumber === level) {
+        icon = cellNumber >= bestLevel && crown ? king : iconsPerLevel[level];
+        return ['', icon];
+    }
+    if (cellNumber === bestLevel && (level < bestLevel || !lives)) {
+        icon = '👑';
+        return ['', icon];
+    }
+    return ['', icon];
 }
 
 function updateStats() {
@@ -29,6 +54,12 @@ function updateStats() {
 
     levelElement.textContent = `${level} / ${livesPerLevel.length - 1}`;
     bestLevelElement.textContent = `${bestLevel}`; // TODO
+
+    // update path bar
+    cellsElement.innerHTML = [...livesPerLevel].slice(1).map((item, index) => {
+        const [classNames, content] = _getCellContent(index + 1);
+        return `<div class="cell ${classNames}">${content}</div>`;
+    }).join('');
 }
 
 // function resetBlocks() {
@@ -130,11 +161,13 @@ function initGame() {
     // hide restart button
     restartBtn.style.visibility = 'hidden';
     level = 1;
+    crown = bestLevel !== 0;
+    king = _getRandomItem(['🤴', '👸']);
     initLevel(level);
 }
 
 function initLevel(level) {
-    const needBlocksCount = level + 1;
+    const levelBlocksCount = level + 1;
 
     // remove old blocks
     blocksElement.innerHTML = '';
@@ -146,21 +179,26 @@ function initLevel(level) {
     lives = livesPerLevel[level];
 
     // add blocks
-    for (let i = 0; i < needBlocksCount; i++) {
+    for (let i = 0; i < levelBlocksCount; i++) {
         addBlock(i);
     }
 
     updateStats();
 }
 
+//......................... 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17  - levels
 //......................... 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18  - count of blocks
 const goodBlocksPerLevel = [0, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]; // - count of green blocks for level
-const livesPerLevel = [0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
+const livesPerLevel      = [0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4];
+const iconsPerLevel      = [0, '🤔', '🙂', '😊', '🙃', '😏', '🤓', '😎', '🤩', '😈', '🗿', '🤠', '🥷', '🤖', '🧙', '🧠', '👽', '🤖'];
 
 let map;
 let level;
 let lives;
 let bestLevel = Number(localStorage.getItem('best-level')) || 0;
+// const maxLevel = goodBlocksPerLevel.length - 1;
+let crown;
+let king;
 initGame();
 
 // checkMapShuffling(4);
